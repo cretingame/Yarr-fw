@@ -32,7 +32,16 @@ cmds_debug=(
 "display_hw_ila_data [ get_hw_ila_data *]\n"
 )
 
-
+cmds_post_gui=(
+"set_property TRIGGER_COMPARE_VALUE eq1'b1 [get_hw_probes app_0/dma_ctrl_start_l2p_s_1 -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_0.axis_debug\"}]]\n" + 
+"set_property TRIGGER_COMPARE_VALUE eq1'b1 [get_hw_probes app_0/dma_ctrl_start_l2p_s -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_2.pipelined_wishbone_debug\"}]]\n" +
+"set_property TRIGGER_COMPARE_VALUE eq1'b1 [get_hw_probes app_0/ddr_app_rd_data_valid_s -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_5.ddr_debug\"}]]\n" +
+"run_hw_ila [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1]]\n" +
+"wait_on_hw_ila -timeout 5 [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1]]\n" +
+"display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_0.axis_debug\"}]]\n" +
+"display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_2.pipelined_wishbone_debug\"}]]\n" +
+"display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_5.ddr_debug\"}]]\n"
+)
 
 for root, dirs, files in os.walk(project_path):
 	for file in files:
@@ -74,7 +83,7 @@ else:
 
 if (ltx_file != None):
 	ltx_file = ltx_files[nb]
-	cmds = cmds_debug.format('{',ltx_file,'}')
+	cmds = cmds_debug.format('{',ltx_file,'}') + cmds_post_gui
 	script_file.write(cmds)
 	script_file.flush()
 	subprocess.call(["vivado", "-mode", "batch","-source", script_path])

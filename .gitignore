@@ -1,3 +1,4 @@
+.Xil
 *.bit
 *.log
 *.jou
@@ -11,6 +12,7 @@
 *.mcs
 *.prm
 *.btree
+*.str
 bitstream
 par
 project
