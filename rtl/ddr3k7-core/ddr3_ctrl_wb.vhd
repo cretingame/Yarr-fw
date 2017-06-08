@@ -81,13 +81,6 @@ architecture behavioral of ddr3_ctrl_wb is
     --------------------------------------
     -- Constants
     --------------------------------------
-    --constant c_DDR_BURST_LENGTH : unsigned(5 downto 0) := TO_UNSIGNED(16, 6);
-	--constant c_READ_STALL_ASSERT : unsigned(6 downto 0) := TO_UNSIGNED(54, 7);
-	--constant c_READ_STALL_NEGATE : unsigned(6 downto 0) := TO_UNSIGNED(42, 7);
-	--constant c_WRITE_STALL_ASSERT : unsigned(6 downto 0) := TO_UNSIGNED(52, 7);
-	--constant c_WRITE_STALL_NEGATE : unsigned(6 downto 0) := TO_UNSIGNED(42, 7);
-    --constant c_ADDR_SHIFT : integer := log2_ceil(g_DATA_PORT_SIZE/8);
-    --constant c_STALL_TIME : unsigned(3 downto 0) := TO_UNSIGNED(15, 4);
     constant c_write_wait_time : unsigned(9 downto 0) := TO_UNSIGNED(15, 10);
     constant c_read_wait_time : unsigned(9 downto 0) := TO_UNSIGNED(15, 10);
     
@@ -421,12 +414,6 @@ begin
  
 
     
---    qword_wr_swap_comp:qword_swap_512
---    port map(
---        qword_swap => "000",
---        din => wb_wr_data_shift_s,
---        dout => wb_wr_data_shift_swp_s
---    );
     
 
     fifo_wb_wr_din_s <= fifo_wb_wr_addr_din_s & 
@@ -462,8 +449,6 @@ begin
         
     begin
     if (rst_n_i = '0') then
-        --wb_read_test <= 0;
-        --wb_read_cnt <= 0;
         wb_read_wait_cnt <= c_read_wait_time;
         
         wb_rd_qmask_shift_s <= (others => '0');
@@ -676,19 +661,16 @@ begin
     begin
         if (rst_n_i = '0') then
             ddr_cmd_en_o <= '0';
-            --ddr_addr_o <= (others => '0');
             ddr_cmd_o <= "000";
         elsif rising_edge(ddr_ui_clk_i) then
             if(fifo_wb_wr_rd_s = '1') then
                 ddr_cmd_en_o <= '1';
                 ddr_cmd_o <= "000";
                 ddr_cmd_s <= '0';
-                --ddr_addr_o <= fifo_wb_wr_dout_s(604 downto 576);
             elsif (fifo_wb_rd_addr_rd_s = '1') then
                 ddr_cmd_en_o <= '1';
                 ddr_cmd_o <= "001";
                 ddr_cmd_s <= '1';
-                --ddr_addr_o <= fifo_wb_rd_addr_dout_s;
             elsif (ddr_rdy_i = '1') then
                 ddr_cmd_en_o <= '0';
             
@@ -698,11 +680,6 @@ begin
     
     ddr_addr_o <= fifo_wb_wr_dout_s(604 downto 576) when ddr_cmd_s = '0' else
                   fifo_wb_rd_addr_dout_s;
-                  
-    --ddr_cmd_o <= "000" when  fifo_wb_wr_rd_d = '1' else
-    --                           "001";
-                               
-    --ddr_cmd_en_o <= fifo_wb_wr_rd_d or fifo_wb_rd_addr_rd_d;
     
     --------------------------------------
     -- DDR Data out
@@ -725,8 +702,6 @@ begin
     end process p_ddr_data_out;
     
     ddr_wdf_data_o <= fifo_wb_wr_dout_s(511 downto 0);
-    --ddr_wdf_wren_o <= fifo_wb_wr_rd_d;
-    --ddr_wdf_end_o  <= fifo_wb_wr_rd_d;
     ddr_wdf_mask_o <= not fifo_wb_wr_dout_s(575 downto 512);
         
     
@@ -742,45 +717,13 @@ begin
     
     fifo_wb_rd_data_din_s <= ddr_rd_data_i;
     
---    qword_rd_swap_comp:qword_swap_512
---    port map(
---        qword_swap => "000",
---        din => ddr_rd_data_i,
---        dout => fifo_wb_rd_data_din_s
---    );
-    
---    process(ddr_rd_data_i,qword_swap_ds)
---    begin
---    fifo_wb_rd_data_din_s <= f_qword_swap_512(c_BYTE_SWAP, ddr_rd_data_i, qword_swap_ds);
---    end process;
-
-    
-    --fifo_wb_rd_data_din_s <= ddr_rd_data_i; -- big endian
-    --rd_data_g:for i in 0 to c_register_shift_size-1 generate
-        --little endian conversion
-        --fifo_wb_rd_data_din_s(i*64+63 downto i*64) <= ddr_rd_data_i(((c_register_shift_size-1)-i)*64+63 downto ((c_register_shift_size-1)-i)*64);
-        --fifo_wb_wr_mask_din_s(((c_register_shift_size-1)-i)*8+7 downto ((c_register_shift_size-1)-i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_qmask_shift_s(i) = '1' and wb_wr_addr_row_s(i) = '1' else (others=>'0');
-    --end generate rd_data_g;
-    
+   
 	
     --------------------------------------
     -- Stall proc
     --------------------------------------
 	wb_stall_s <= fifo_wb_wr_full_s or fifo_wb_rd_addr_full_s; --or (not ddr_wdf_rdy_i) or (not ddr_rdy_i);
 	wb_stall_o <= wb_stall_s;
-    p_wb_stall : process (wb_clk_i, rst_n_i)
-    begin
-        if (rst_n_i = '0') then
-            --wb_stall_s <= '0';
-            wb_stall_d <= '0';
-			wb_stall_dd <= '0';
 
-        elsif rising_edge(wb_clk_i) then
-
-			
-            wb_stall_d <= wb_stall_s;
-            wb_stall_dd <= wb_stall_d;
-        end if;
-    end process p_wb_stall;
 end architecture behavioral;
 

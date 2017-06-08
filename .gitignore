@@ -13,6 +13,9 @@
 *.prm
 *.btree
 *.str
+*.csv
+*.ila
+*.old
 bitstream
 par
 project
