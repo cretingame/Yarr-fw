@@ -150,6 +150,7 @@ architecture behavioral of ddr3_ctrl_wb is
     signal fifo_wb_rd_addr_rd_d : std_logic;
     signal fifo_wb_rd_addr_dout_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
     signal fifo_wb_rd_addr_full_s : std_logic;
+    signal fifo_wb_rd_addr_almost_full_s : std_logic;
     signal fifo_wb_rd_addr_empty_s : std_logic;
     
     --signal fifo_wb_rd_mask_din_a : mask_array;
@@ -160,6 +161,7 @@ architecture behavioral of ddr3_ctrl_wb is
     --signal fifo_wb_rd_addr_rd_d : std_logic;
     signal fifo_wb_rd_mask_dout_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_full_s : std_logic;
+    signal fifo_wb_rd_mask_almost_full_s : std_logic;
     signal fifo_wb_rd_mask_empty_s : std_logic;
     
     signal fifo_wb_rd_mask_rd_data_count_s : STD_LOGIC_VECTOR(3 DOWNTO 0);
@@ -171,6 +173,7 @@ architecture behavioral of ddr3_ctrl_wb is
     signal fifo_wb_rd_data_dout_s : std_logic_vector(511 downto 0);
     signal fifo_wb_rd_data_dout_a : data_array;
     signal fifo_wb_rd_data_full_s : std_logic;
+    signal fifo_wb_rd_data_almost_full_s : std_logic;
     signal fifo_wb_rd_data_empty_s : std_logic;
     
     signal fifo_wb_rd_data_rd_data_count_s : STD_LOGIC_VECTOR(3 DOWNTO 0);
@@ -622,6 +625,7 @@ begin
         rd_en => fifo_wb_rd_addr_rd_s,
         dout => fifo_wb_rd_addr_dout_s,
         full => fifo_wb_rd_addr_full_s,
+        almost_full => fifo_wb_rd_addr_almost_full_s,
         empty => fifo_wb_rd_addr_empty_s
       );
     
@@ -635,6 +639,7 @@ begin
           rd_en => fifo_wb_rd_mask_rd_s,
           dout => fifo_wb_rd_mask_dout_s,
           full => fifo_wb_rd_mask_full_s,
+          almost_full => fifo_wb_rd_mask_almost_full_s,
           empty => fifo_wb_rd_mask_empty_s,
           rd_data_count => fifo_wb_rd_mask_rd_data_count_s
         );
@@ -649,6 +654,7 @@ begin
           rd_en => fifo_wb_rd_data_rd_s,
           dout => fifo_wb_rd_data_dout_s,
           full => fifo_wb_rd_data_full_s,
+          almost_full => fifo_wb_rd_data_almost_full_s,
           empty => fifo_wb_rd_data_empty_s,
           rd_data_count => fifo_wb_rd_data_rd_data_count_s
         );    
@@ -712,7 +718,7 @@ begin
     
     
     fifo_wb_wr_rd_s <= ddr_wdf_rdy_i and ddr_rdy_i and not fifo_wb_wr_empty_s;
-    fifo_wb_rd_addr_rd_s <= ddr_rdy_i and not fifo_wb_rd_addr_empty_s;
+    fifo_wb_rd_addr_rd_s <= ddr_rdy_i and (not fifo_wb_rd_addr_empty_s) and (not fifo_wb_rd_data_almost_full_s); -- and (not fifo_wb_rd_mask_full_s);
     fifo_wb_rd_data_wr_s <= ddr_rd_data_valid_i and ddr_rd_data_end_i; -- TODO : check ddr_clk
     
     fifo_wb_rd_data_din_s <= ddr_rd_data_i;
@@ -722,7 +728,7 @@ begin
     --------------------------------------
     -- Stall proc
     --------------------------------------
-	wb_stall_s <= fifo_wb_wr_full_s or fifo_wb_rd_addr_full_s; --or (not ddr_wdf_rdy_i) or (not ddr_rdy_i);
+	wb_stall_s <= fifo_wb_wr_full_s or fifo_wb_rd_addr_almost_full_s or fifo_wb_rd_mask_almost_full_s; --or (not ddr_wdf_rdy_i) or (not ddr_rdy_i);
 	wb_stall_o <= wb_stall_s;
 
 end architecture behavioral;

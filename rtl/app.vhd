@@ -117,7 +117,7 @@ end app;
 
 architecture Behavioral of app is
     
-    constant DEBUG_C : std_logic_vector(5 downto 0) := "100101";
+    constant DEBUG_C : std_logic_vector(5 downto 0) := "110101";
     
 
     
@@ -1229,7 +1229,7 @@ begin
           probe18(0) => cfg_interrupt_s,
           probe19(0) => cfg_interrupt_rdy_i,
           probe20(0) => dma_ctrl_done_s,
-          probe21 => dma_ctrl_current_state_ds,
+          probe21 => wbm_arb_tready_s & wbm_arb_tready_s & ldm_arb_tready_s,--dma_ctrl_current_state_ds,
           probe22(0) => tx_err_drop_i--next_item_valid_s
       );
   end generate dbg_0;
