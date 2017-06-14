@@ -582,6 +582,8 @@ package app_pkg is
           ----------------------------------------------------------------------------
           -- Debug ports
           ----------------------------------------------------------------------------
+          ddr_wb_rd_mask_dout_do : out std_logic_vector(7 downto 0);
+          ddr_wb_rd_mask_addr_dout_do : out std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
           ddr_rd_mask_rd_data_count_do : out std_logic_vector(3 downto 0);
           ddr_rd_data_rd_data_count_do : out std_logic_vector(3 downto 0);
           ddr_rd_fifo_full_do : out std_logic_vector(1 downto 0);
@@ -711,7 +713,8 @@ package app_pkg is
         probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
         probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
         probe14 : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        probe15 : IN STD_LOGIC_VECTOR(3 DOWNTO 0)
+        probe15 : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+        probe16 : IN STD_LOGIC_VECTOR(36 DOWNTO 0)
     );
     END COMPONENT  ;
     

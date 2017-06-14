@@ -408,6 +408,8 @@ architecture Behavioral of app is
     signal ddr_rd_fifo_rd_ds : std_logic_vector(1 downto 0);
     signal ddr_rd_mask_rd_data_count_ds : std_logic_vector(3 downto 0);
     signal ddr_rd_data_rd_data_count_ds : std_logic_vector(3 downto 0);
+    signal ddr_wb_rd_mask_dout_ds : std_logic_vector(7 downto 0);
+    signal ddr_wb_rd_mask_addr_dout_ds : std_logic_vector(29-1 downto 0);
    
 	
 	---------------------------------------------------------
@@ -1023,6 +1025,8 @@ begin
       wb_ack_o            => dma_ddr_ack_s,
       wb_stall_o          => dma_ddr_stall_s,
       
+      ddr_wb_rd_mask_dout_do => ddr_wb_rd_mask_dout_ds,
+      ddr_wb_rd_mask_addr_dout_do => ddr_wb_rd_mask_addr_dout_ds,
       ddr_rd_mask_rd_data_count_do => ddr_rd_mask_rd_data_count_ds,
       ddr_rd_data_rd_data_count_do => ddr_rd_data_rd_data_count_ds,
       ddr_rd_fifo_full_do => ddr_rd_fifo_full_ds,
@@ -1288,7 +1292,8 @@ begin
           probe12(0) => dma_ctrl_start_p2l_s, 
           probe13(0) => dma_ctrl_start_next_s,
           probe14 => ddr_rd_mask_rd_data_count_ds,
-          probe15 => ddr_rd_data_rd_data_count_ds
+          probe15 => ddr_rd_data_rd_data_count_ds,
+          probe16 => ddr_wb_rd_mask_addr_dout_ds & ddr_wb_rd_mask_dout_ds
       );
   end generate dbg_2;
   

@@ -65,6 +65,8 @@ entity ddr3_ctrl_wb is
         ----------------------------------------------------------------------------
         -- Debug ports
         ----------------------------------------------------------------------------
+        ddr_wb_rd_mask_dout_do : out std_logic_vector(7 downto 0);
+        ddr_wb_rd_mask_addr_dout_do : out std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
         ddr_rd_mask_rd_data_count_do : out std_logic_vector(3 downto 0);
         ddr_rd_data_rd_data_count_do : out std_logic_vector(3 downto 0);
         ddr_rd_fifo_full_do : out std_logic_vector(1 downto 0);
@@ -155,7 +157,7 @@ architecture behavioral of ddr3_ctrl_wb is
     
     --signal fifo_wb_rd_mask_din_a : mask_array;
     --signal wb_rd_mask_din_s : std_logic_vector(3 downto 0);
-    signal fifo_wb_rd_mask_din_s : std_logic_vector(c_register_shift_size-1 downto 0);
+    signal fifo_wb_rd_mask_din_s : std_logic_vector(g_BYTE_ADDR_WIDTH + c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_wr_s : std_logic;
     signal fifo_wb_rd_mask_rd_s : std_logic;
     --signal fifo_wb_rd_addr_rd_d : std_logic;
@@ -223,6 +225,8 @@ begin
     -- Read FIFOs debug
     --------------------------------------
     
+    ddr_wb_rd_mask_dout_do <= fifo_wb_rd_mask_dout_s;
+    --ddr_wb_rd_mask_addr_dout_do <= fifo_wb_rd_mask_addr_dout_s;
     ddr_rd_fifo_full_do  <=  fifo_wb_rd_data_full_s & fifo_wb_rd_mask_full_s;
     ddr_rd_fifo_empty_do <=  fifo_wb_rd_data_empty_s & fifo_wb_rd_mask_empty_s;
     ddr_rd_fifo_rd_do    <= fifo_wb_rd_data_rd_s & fifo_wb_rd_mask_rd_s;
@@ -603,7 +607,7 @@ begin
  
     
     
-    fifo_wb_rd_mask_din_s <= wb_rd_qmask_shift_s;
+    fifo_wb_rd_mask_din_s <= fifo_wb_rd_addr_din_s & wb_rd_qmask_shift_s; -- TODO: DEBUG
     
     
     fifo_wb_rd_data_rd_s <= '1' when wb_rd_ack_shift_s(c_register_shift_size-1 downto 1) = "0000000" and fifo_wb_rd_mask_empty_s = '0' and fifo_wb_rd_data_empty_s = '0' else
@@ -634,10 +638,12 @@ begin
           rst => rst_s,
           wr_clk => wb_clk_i,
           rd_clk => wb_clk_i,
-          din => fifo_wb_rd_mask_din_s,
+          din(7 downto 0) => fifo_wb_rd_mask_din_s,
+          din(36 downto 8) => fifo_wb_rd_addr_din_s,
           wr_en => fifo_wb_rd_mask_wr_s,
           rd_en => fifo_wb_rd_mask_rd_s,
-          dout => fifo_wb_rd_mask_dout_s,
+          dout(7 downto 0) => fifo_wb_rd_mask_dout_s,
+          dout(36 downto 8) => ddr_wb_rd_mask_addr_dout_do,
           full => fifo_wb_rd_mask_full_s,
           almost_full => fifo_wb_rd_mask_almost_full_s,
           empty => fifo_wb_rd_mask_empty_s,
