@@ -52,10 +52,10 @@ cmds_post_gui=(
 '    display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~"app_0/dbg_2.pipelined_wishbone_debug"}]]\n'+
 '    display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~"app_0/dbg_4.l2p_debug"}]]\n'+
 '    display_hw_ila_data [upload_hw_ila_data [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~"app_0/dbg_5.ddr_debug"}]]\n'+
-'    write_hw_ila_data $i-$root$ilafile1.ila hw_ila_data_1\n'+
-'    write_hw_ila_data $i-$root$ilafile2.ila hw_ila_data_2\n'+
-'    write_hw_ila_data $i-$root$ilafile3.ila hw_ila_data_3\n'+
-'    write_hw_ila_data $i-$root$ilafile4.ila hw_ila_data_4\n'+
+'    write_hw_ila_data $root$i-$ilafile1.ila hw_ila_data_1\n'+
+'    write_hw_ila_data $root$i-$ilafile2.ila hw_ila_data_2\n'+
+'    write_hw_ila_data $root$i-$ilafile3.ila hw_ila_data_3\n'+
+'    write_hw_ila_data $root$i-$ilafile4.ila hw_ila_data_4\n'+
 '}\n'
 )
 
