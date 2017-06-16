@@ -156,7 +156,6 @@ architecture behavioral of ddr3_ctrl_wb is
     signal fifo_wb_rd_addr_empty_s : std_logic;
     
     --signal fifo_wb_rd_mask_din_a : mask_array;
-    --signal wb_rd_mask_din_s : std_logic_vector(3 downto 0);
     signal fifo_wb_rd_mask_din_s : std_logic_vector(g_BYTE_ADDR_WIDTH + c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_wr_s : std_logic;
     signal fifo_wb_rd_mask_rd_s : std_logic;
@@ -166,19 +165,19 @@ architecture behavioral of ddr3_ctrl_wb is
     signal fifo_wb_rd_mask_almost_full_s : std_logic;
     signal fifo_wb_rd_mask_empty_s : std_logic;
     
-    signal fifo_wb_rd_mask_rd_data_count_s : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    signal fifo_wb_rd_mask_rd_data_count_s : STD_LOGIC_VECTOR(4 DOWNTO 0);
     
     signal fifo_wb_rd_data_din_s : std_logic_vector(511 downto 0);
     signal fifo_wb_rd_data_wr_s : std_logic;
     signal fifo_wb_rd_data_rd_s : std_logic;
-    signal fifo_wb_rd_data_rd_d : std_logic;
+    --signal fifo_wb_rd_data_rd_d : std_logic;
     signal fifo_wb_rd_data_dout_s : std_logic_vector(511 downto 0);
     signal fifo_wb_rd_data_dout_a : data_array;
     signal fifo_wb_rd_data_full_s : std_logic;
     signal fifo_wb_rd_data_almost_full_s : std_logic;
     signal fifo_wb_rd_data_empty_s : std_logic;
     
-    signal fifo_wb_rd_data_rd_data_count_s : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    signal fifo_wb_rd_data_rd_data_count_s : STD_LOGIC_VECTOR(4 DOWNTO 0);
     
     signal ddr_cmd_s : std_logic; -- '1' = read, '0' = write
     signal ddr_rd_data_end_s : std_logic;
@@ -230,8 +229,8 @@ begin
     ddr_rd_fifo_full_do  <=  fifo_wb_rd_data_full_s & fifo_wb_rd_mask_full_s;
     ddr_rd_fifo_empty_do <=  fifo_wb_rd_data_empty_s & fifo_wb_rd_mask_empty_s;
     ddr_rd_fifo_rd_do    <= fifo_wb_rd_data_rd_s & fifo_wb_rd_mask_rd_s;
-    ddr_rd_mask_rd_data_count_do <= fifo_wb_rd_mask_rd_data_count_s;
-    ddr_rd_data_rd_data_count_do <= fifo_wb_rd_data_rd_data_count_s;
+    ddr_rd_mask_rd_data_count_do <= fifo_wb_rd_mask_rd_data_count_s(3 downto 0);
+    ddr_rd_data_rd_data_count_do <= fifo_wb_rd_data_rd_data_count_s(3 downto 0);
 
     --------------------------------------
     -- QWORD swap debug
@@ -584,10 +583,8 @@ begin
             for i in 0 to c_register_shift_size-1 loop
                 wb_rd_data_shift_a(i) <= (others => '0');
                 wb_rd_ack_shift_s(i) <= '0';
-                fifo_wb_rd_data_rd_d <= '0';
             end loop;
         elsif rising_edge(wb_clk_i) then
-            fifo_wb_rd_data_rd_d <= fifo_wb_rd_data_rd_s;
             if(fifo_wb_rd_data_rd_s = '1') then
                 for i in 0 to c_register_shift_size-1 loop
                     wb_rd_data_shift_a(i) <= fifo_wb_rd_data_dout_s(63+(i*64) downto 0+(i*64));
@@ -638,8 +635,7 @@ begin
           rst => rst_s,
           wr_clk => wb_clk_i,
           rd_clk => wb_clk_i,
-          din(7 downto 0) => fifo_wb_rd_mask_din_s,
-          din(36 downto 8) => fifo_wb_rd_addr_din_s,
+          din => fifo_wb_rd_mask_din_s,
           wr_en => fifo_wb_rd_mask_wr_s,
           rd_en => fifo_wb_rd_mask_rd_s,
           dout(7 downto 0) => fifo_wb_rd_mask_dout_s,

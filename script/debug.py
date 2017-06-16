@@ -39,7 +39,7 @@ cmds_post_gui=(
 "set_property TRIGGER_COMPARE_VALUE eq1'b1 [get_hw_probes app_0/ddr_app_cmd_en_s -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_5.ddr_debug\"}]]\n" +
 "set_property TRIGGER_COMPARE_VALUE eq1'b1 [get_hw_probes app_0/dma_ctrl_start_l2p_s -of_objects [get_hw_ilas -of_objects [get_hw_devices xc7k160t_1] -filter {CELL_NAME=~\"app_0/dbg_4.l2p_debug\"}]]\n"+
 'set root /home/asautaux/Yarr-fw/ila/\n'+
-'set ilafile1 ila_axis_data.ila\n'+
+'set ilafile1 ila_axis_data\n'+
 'set ilafile2 ila_wb_data\n'+
 'set ilafile3 ila_l2p_data\n'+
 'set ilafile4 ila_ram_data\n'+

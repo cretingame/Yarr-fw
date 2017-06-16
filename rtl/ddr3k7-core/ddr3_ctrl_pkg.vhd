@@ -107,7 +107,7 @@ package ddr3_ctrl_pkg is
         full : OUT STD_LOGIC;
         almost_full : OUT STD_LOGIC;
         empty : OUT STD_LOGIC;
-        rd_data_count : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
+        rd_data_count : OUT STD_LOGIC_VECTOR(4 DOWNTO 0)
       );
     END COMPONENT;
     
@@ -123,7 +123,7 @@ package ddr3_ctrl_pkg is
         full : OUT STD_LOGIC;
         almost_full : OUT STD_LOGIC;
         empty : OUT STD_LOGIC;
-        rd_data_count : OUT STD_LOGIC_VECTOR(3 DOWNTO 0)
+        rd_data_count : OUT STD_LOGIC_VECTOR(4 DOWNTO 0)
       );
     END COMPONENT;
     
