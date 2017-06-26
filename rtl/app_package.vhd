@@ -35,12 +35,25 @@ package app_pkg is
 
     component simple_counter is
         Port ( 
+               enable_i : in STD_LOGIC;
                rst_i : in STD_LOGIC;
                clk_i : in STD_LOGIC;
-               count_o : out STD_LOGIC_VECTOR (28 downto 0)
+               count_o : out STD_LOGIC_VECTOR (28 downto 0);
+               gray_count_o : out STD_LOGIC_VECTOR (28 downto 0)
                 );
     end component;
     
+    component m_clk_sync is
+        Generic (
+            data_width_g : integer := 29
+        );
+        Port ( rst0_i : in STD_LOGIC;
+               rst1_i : in STD_LOGIC;
+               clk0_i : in STD_LOGIC;
+               clk1_i : in STD_LOGIC;
+               data0_i : in STD_LOGIC_VECTOR (data_width_g-1 downto 0);
+               data1_o : out STD_LOGIC_VECTOR (data_width_g-1 downto 0));
+    end component;
 
         Component p2l_decoder is
         Port (
@@ -655,8 +668,8 @@ package app_pkg is
             probe19 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
             probe20 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
             probe21 : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
-            probe22 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
-            
+            probe22 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+            probe23 : IN STD_LOGIC_VECTOR(28 DOWNTO 0)
         );
     END COMPONENT  ;
     
@@ -714,7 +727,8 @@ package app_pkg is
         probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
         probe14 : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
         probe15 : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-        probe16 : IN STD_LOGIC_VECTOR(36 DOWNTO 0)
+        probe16 : IN STD_LOGIC_VECTOR(36 DOWNTO 0);
+        probe17 : IN STD_LOGIC_VECTOR(28 DOWNTO 0)
     );
     END COMPONENT  ;
     
@@ -788,7 +802,8 @@ COMPONENT ila_l2p_dma
         probe38 : IN STD_LOGIC_VECTOR(63 DOWNTO 0); 
         probe39 : IN STD_LOGIC_VECTOR(63 DOWNTO 0); 
         probe40 : IN STD_LOGIC_VECTOR(12 DOWNTO 0);
-        probe41 : IN STD_LOGIC_VECTOR(12 DOWNTO 0)
+        probe41 : IN STD_LOGIC_VECTOR(12 DOWNTO 0);
+        probe42 : IN STD_LOGIC_VECTOR(28 DOWNTO 0)
     );
     END COMPONENT  ;
     
@@ -812,7 +827,8 @@ COMPONENT ila_l2p_dma
         probe10 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
         probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
         probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+        probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe14 : IN STD_LOGIC_VECTOR(28 DOWNTO 0)
     );
     END COMPONENT  ;
 
