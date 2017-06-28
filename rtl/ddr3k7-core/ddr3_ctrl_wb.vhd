@@ -102,16 +102,23 @@ architecture behavioral of ddr3_ctrl_wb is
 
     
     signal wb_wr_data_shift_a : data_array;
+    signal wb_wr_data_shift_next_a : data_array;
     signal wb_wr_data_shift_s : std_logic_vector(511 downto 0);
     signal wb_wr_mask_shift_a : mask_array;
+    signal wb_wr_mask_shift_next_a : mask_array;
     signal wb_wr_valid_shift_s : std_logic_vector(c_register_shift_size-1 downto 0);
+    signal wb_wr_valid_shift_next_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_wr_addr_shift_a : addr_array;
-    
+    signal wb_wr_addr_shift_next_a : addr_array;
+    signal wb_wr_addr_ref_a : addr_array;
 
     
-    signal wb_wr_addr_ref_a : addr_array;
+    signal wb_wr_shifting_s : std_logic;
     signal wb_wr_match_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_wr_row_a : row_array;
+    signal wb_wr_row_or_s : std_logic_vector(c_register_shift_size-1 downto 0);
+    signal wb_wr_several_row_s : std_logic;
+    signal wb_wr_flush_v_s : std_logic_vector(c_register_shift_size-1 downto 0); 
     signal wb_wr_shift_flush_s : std_logic;
 
     
@@ -296,12 +303,12 @@ begin
             -- Erase the data sent to the FIFO
             if(wb_wr_shift_flush_s = '1') then
                 wb_write_wait_cnt <= c_write_wait_time;
-                for i in 0 to (c_register_shift_size-1) loop -- FLUSH Condition
-                   if (wb_wr_valid_shift_s(i) = '1' and wb_wr_addr_ref_a(i)(2 downto 0) = "000") then 
-                       wb_wr_addr_shift_a(i) <= (others => '1');
-                       wb_wr_data_shift_a(i) <= (others => '1');
-                       wb_wr_mask_shift_a(i) <= (others => '0');
-                       wb_wr_valid_shift_s(i) <= '0';
+                for i in 1 to (c_register_shift_size-1) loop -- FLUSH Condition
+                   if (wb_wr_valid_shift_s(i) = '1' and wb_wr_match_s(i) = '1') then 
+                       wb_wr_addr_shift_a(i-1) <= (others => '1');
+                       wb_wr_data_shift_a(i-1) <= (others => '1');
+                       wb_wr_mask_shift_a(i-1) <= (others => '0');
+                       wb_wr_valid_shift_s(i-1) <= '0';
                     end if;
                 end loop;
             end if;
@@ -319,7 +326,18 @@ begin
             end if;
             
             
+
+            wb_wr_addr_shift_a <= wb_wr_addr_shift_next_a;
+            wb_wr_data_shift_a <= wb_wr_data_shift_next_a;
+            wb_wr_mask_shift_a <= wb_wr_mask_shift_next_a;
+            wb_wr_valid_shift_s <= wb_wr_valid_shift_next_s;
+              
+
+  
+            
         end if;
+        
+        
         
         
         
@@ -327,18 +345,27 @@ begin
     
     
     
-    p_wb_write_rtl : process (wb_write_wait_cnt,wb_wr_addr_shift_a,wb_wr_addr_ref_a,wb_wr_valid_shift_s,wb_wr_shift_flush_s)
+    p_wb_write_rtl : process (wb_write_wait_cnt,wb_wr_addr_shift_a,wb_wr_addr_ref_a,wb_wr_valid_shift_s,wb_wr_shift_flush_s,wb_wr_row_or_s,wb_wr_row_a,wb_wr_match_s)
     begin
         wb_wr_shift_flush_s <= '0';
         fifo_wb_wr_addr_din_s <= (others => '0');
+        wb_wr_row_or_s <= (others => '0');
         for i in (c_register_shift_size-1) downto 0 loop
-            if wb_wr_valid_shift_s(i) = '1' and wb_wr_addr_ref_a(i)(2 downto 0) = "000" then -- FLUSH Condition
+            --if wb_wr_valid_shift_s(i) = '1' and wb_wr_addr_ref_a(i)(2 downto 0) = "000" then -- FLUSH Condition
+            if wb_wr_flush_v_s(i) = '1' then -- FLUSH Condition
                     fifo_wb_wr_addr_din_s <= wb_wr_addr_ref_a(i);
+                    wb_wr_row_or_s <= wb_wr_row_a(i);
                     wb_wr_shift_flush_s <= '1';
             end if;
+              
             
         end loop;
         
+        if((wb_wr_flush_v_s /= wb_wr_row_or_s) and (wb_wr_flush_v_s /= (wb_wr_flush_v_s'range => '0'))) then
+            wb_wr_several_row_s <= '1';
+        else
+            wb_wr_several_row_s <= '0';
+        end if;
         
         fifo_wb_wr_wr_s <= wb_wr_shift_flush_s;
         
@@ -346,10 +373,54 @@ begin
                 wb_wr_addr_ref_a(i) <= std_logic_vector(unsigned(wb_wr_addr_shift_a(i)) - i);
         end loop;
         
+        
     end process p_wb_write_rtl;
     
+    p_wb_write_shift: process (wb_wr_shifting_s,wb_wr_addr_shift_a,wb_wr_data_shift_a,wb_wr_mask_shift_a,wb_wr_valid_shift_s,wb_addr_i,wb_data_i,wb_sel_i,wb_wr_flush_v_s)
     
-
+    begin
+        if(wb_wr_shifting_s = '1') then
+            wb_wr_addr_shift_next_a(c_register_shift_size-1) <= wb_addr_i(g_BYTE_ADDR_WIDTH-1 downto 0);
+            wb_wr_data_shift_next_a(c_register_shift_size-1) <= wb_data_i;
+            wb_wr_mask_shift_next_a(c_register_shift_size-1) <= wb_sel_i;
+            wb_wr_valid_shift_next_s(c_register_shift_size-1) <= wb_cyc_i and wb_stb_i and wb_we_i;
+            for i in 1 to c_register_shift_size-1 loop
+                if wb_wr_flush_v_s(i) = '0' then
+                    wb_wr_addr_shift_next_a(i-1) <= wb_wr_addr_shift_a(i);
+                    wb_wr_data_shift_next_a(i-1) <= wb_wr_data_shift_a(i);
+                    wb_wr_mask_shift_next_a(i-1) <= wb_wr_mask_shift_a(i);
+                    wb_wr_valid_shift_next_s(i-1) <= wb_wr_valid_shift_s(i);
+                else
+                    wb_wr_addr_shift_next_a(i-1) <= (others => '1');
+                    wb_wr_data_shift_next_a(i-1) <= (others => '1');
+                    wb_wr_mask_shift_next_a(i-1) <= (others => '0');
+                    wb_wr_valid_shift_next_s(i-1) <= '0';                    
+                end if;
+            end loop;            
+        else
+            for i in 0 to c_register_shift_size-1 loop
+                if wb_wr_flush_v_s(i) = '0' then
+                    wb_wr_addr_shift_next_a(i) <= wb_wr_addr_shift_a(i);
+                    wb_wr_data_shift_next_a(i) <= wb_wr_data_shift_a(i);
+                    wb_wr_mask_shift_next_a(i) <= wb_wr_mask_shift_a(i);
+                    wb_wr_valid_shift_next_s(i) <= wb_wr_valid_shift_s(i);
+                else
+                    wb_wr_addr_shift_next_a(i) <= (others => '1');
+                    wb_wr_data_shift_next_a(i) <= (others => '1');
+                    wb_wr_mask_shift_next_a(i) <= (others => '0');
+                    wb_wr_valid_shift_next_s(i) <= '0';               
+                end if;
+            end loop;   
+        end if;
+        
+    
+    end process p_wb_write_shift;
+    
+    wb_wr_shifting_s <= '1' when wb_cyc_i = '1' and wb_stb_i = '1' and wb_we_i = '1' else
+                        '1' when wb_write_wait_cnt = 0 else
+                        '0';
+    
+    wb_wr_flush_v_s <= wb_wr_match_s and wb_wr_valid_shift_s;
     
 
     
@@ -360,7 +431,7 @@ begin
             wb_wr_row_a(i)(j) <= '1' when wb_wr_addr_ref_a(i)(2 downto 0) = wb_wr_addr_ref_a(j)(2 downto 0) and wb_wr_match_s(i) = '1' and wb_wr_match_s(j) = '1' and wb_wr_valid_shift_s(i) = '1' and wb_wr_valid_shift_s(j) = '1' else
                                  '0';
         end generate;
-        fifo_wb_wr_mask_din_s((i)*8+7 downto (i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_valid_shift_s(i) = '1' else (others=>'0');
+        fifo_wb_wr_mask_din_s((i)*8+7 downto (i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_flush_v_s(i) = '1' else (others=>'0');
     end generate;
     
     
