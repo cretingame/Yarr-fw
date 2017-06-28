@@ -116,8 +116,10 @@ architecture behavioral of ddr3_ctrl_wb is
     signal wb_wr_shifting_s : std_logic;
     signal wb_wr_match_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_wr_row_a : row_array;
-    signal wb_wr_row_or_s : std_logic_vector(c_register_shift_size-1 downto 0);
+    signal wb_wr_global_row_s : std_logic_vector(c_register_shift_size-1 downto 0); 
+    signal wb_wr_first_row_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_wr_several_row_s : std_logic;
+    --signal wb_wr_several_row_1_s : std_logic;
     signal wb_wr_flush_v_s : std_logic_vector(c_register_shift_size-1 downto 0); 
     signal wb_wr_shift_flush_s : std_logic;
 
@@ -345,23 +347,23 @@ begin
     
     
     
-    p_wb_write_rtl : process (wb_write_wait_cnt,wb_wr_addr_shift_a,wb_wr_addr_ref_a,wb_wr_valid_shift_s,wb_wr_shift_flush_s,wb_wr_row_or_s,wb_wr_row_a,wb_wr_match_s)
+    p_wb_write_rtl : process (wb_write_wait_cnt,wb_wr_addr_shift_a,wb_wr_addr_ref_a,wb_wr_valid_shift_s,wb_wr_shift_flush_s,wb_wr_first_row_s,wb_wr_row_a,wb_wr_match_s,wb_wr_global_row_s)
     begin
         wb_wr_shift_flush_s <= '0';
         fifo_wb_wr_addr_din_s <= (others => '0');
-        wb_wr_row_or_s <= (others => '0');
+        wb_wr_first_row_s <= (others => '0');
         for i in (c_register_shift_size-1) downto 0 loop
             --if wb_wr_valid_shift_s(i) = '1' and wb_wr_addr_ref_a(i)(2 downto 0) = "000" then -- FLUSH Condition
-            if wb_wr_flush_v_s(i) = '1' then -- FLUSH Condition
+            if wb_wr_global_row_s(i) = '1' then -- FLUSH Condition
                     fifo_wb_wr_addr_din_s <= wb_wr_addr_ref_a(i);
-                    wb_wr_row_or_s <= wb_wr_row_a(i);
+                    wb_wr_first_row_s <= wb_wr_row_a(i);
                     wb_wr_shift_flush_s <= '1';
             end if;
               
             
         end loop;
         
-        if((wb_wr_flush_v_s /= wb_wr_row_or_s) and (wb_wr_flush_v_s /= (wb_wr_flush_v_s'range => '0'))) then
+        if((wb_wr_global_row_s /= wb_wr_first_row_s) and (wb_wr_global_row_s /= (wb_wr_global_row_s'range => '0'))) then
             wb_wr_several_row_s <= '1';
         else
             wb_wr_several_row_s <= '0';
@@ -375,6 +377,7 @@ begin
         
         
     end process p_wb_write_rtl;
+    
     
     p_wb_write_shift: process (wb_wr_shifting_s,wb_wr_addr_shift_a,wb_wr_data_shift_a,wb_wr_mask_shift_a,wb_wr_valid_shift_s,wb_addr_i,wb_data_i,wb_sel_i,wb_wr_flush_v_s)
     
@@ -416,19 +419,21 @@ begin
     
     end process p_wb_write_shift;
     
-    wb_wr_shifting_s <= '1' when wb_cyc_i = '1' and wb_stb_i = '1' and wb_we_i = '1' else
+    wb_wr_shifting_s <= --'0' when wb_wr_several_row_s = '1' else
+                        '1' when wb_cyc_i = '1' and wb_stb_i = '1' and wb_we_i = '1' else
                         '1' when wb_write_wait_cnt = 0 else
                         '0';
     
-    wb_wr_flush_v_s <= wb_wr_match_s and wb_wr_valid_shift_s;
-    
+    wb_wr_global_row_s <= wb_wr_match_s and wb_wr_valid_shift_s;
+    --wb_wr_flush_v_s <= wb_wr_global_row_s;
+    wb_wr_flush_v_s <= wb_wr_first_row_s;
 
     
     wr_mask_match_g:for i in 0 to c_register_shift_size-1 generate
         wb_wr_match_s(i) <= '1' when wb_wr_addr_ref_a(i)(2 downto 0) = "000" else
                             '0';        
         wr_row_g:for j in 0 to c_register_shift_size-1 generate
-            wb_wr_row_a(i)(j) <= '1' when wb_wr_addr_ref_a(i)(2 downto 0) = wb_wr_addr_ref_a(j)(2 downto 0) and wb_wr_match_s(i) = '1' and wb_wr_match_s(j) = '1' and wb_wr_valid_shift_s(i) = '1' and wb_wr_valid_shift_s(j) = '1' else
+            wb_wr_row_a(i)(j) <= '1' when wb_wr_addr_ref_a(i) = wb_wr_addr_ref_a(j) and wb_wr_match_s(i) = '1' and wb_wr_match_s(j) = '1' and wb_wr_valid_shift_s(i) = '1' and wb_wr_valid_shift_s(j) = '1' else
                                  '0';
         end generate;
         fifo_wb_wr_mask_din_s((i)*8+7 downto (i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_flush_v_s(i) = '1' else (others=>'0');
@@ -722,7 +727,7 @@ begin
     --------------------------------------
     -- Stall proc
     --------------------------------------
-	wb_stall_s <= fifo_wb_wr_full_s or fifo_wb_rd_addr_almost_full_s or fifo_wb_rd_mask_almost_full_s; --or (not ddr_wdf_rdy_i) or (not ddr_rdy_i);
+	wb_stall_s <= fifo_wb_wr_full_s or fifo_wb_rd_addr_almost_full_s or fifo_wb_rd_mask_almost_full_s or wb_wr_several_row_s; --or (not ddr_wdf_rdy_i) or (not ddr_rdy_i);
 	wb_stall_o <= wb_stall_s;
 
 end architecture behavioral;
