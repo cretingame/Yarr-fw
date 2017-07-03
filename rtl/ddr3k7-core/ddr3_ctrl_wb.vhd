@@ -120,10 +120,10 @@ architecture behavioral of ddr3_ctrl_wb is
     signal wb_wr_several_row_s : std_logic;
     signal wb_wr_flush_v_s : std_logic_vector(c_register_shift_size-1 downto 0); 
     signal wb_wr_shift_flush_s : std_logic;
-
+    signal wb_wr_shift_flush_1_s : std_logic;
     
-    signal fifo_wb_wr_mask_din_s : std_logic_vector(63 downto 0);
-    signal fifo_wb_wr_addr_din_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);    
+    signal fifo_wb_wr_mask_s : std_logic_vector(63 downto 0);
+    signal fifo_wb_wr_addr_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);    
     signal fifo_wb_wr_din_s : std_logic_vector(604 downto 0);
     signal fifo_wb_wr_wr_s : std_logic;
     signal fifo_wb_wr_rd_s : std_logic;
@@ -132,7 +132,6 @@ architecture behavioral of ddr3_ctrl_wb is
     signal fifo_wb_wr_full_s : std_logic;
     signal fifo_wb_wr_empty_s : std_logic;
     
-
     signal wb_rd_valid_shift_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_rd_valid_shift_next_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal wb_rd_data_shift_a : data_array;
@@ -149,21 +148,21 @@ architecture behavioral of ddr3_ctrl_wb is
     signal wb_rd_several_row_s : std_logic;
     signal wb_rd_flush_v_s : std_logic_vector(c_register_shift_size-1 downto 0); 
     signal wb_rd_shift_flush_s : std_logic;
+    signal wb_rd_shift_flush_1_s : std_logic;
     
+    signal fifo_wb_rd_addr_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
     signal fifo_wb_rd_addr_din_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
     signal fifo_wb_rd_addr_wr_s : std_logic;
     signal fifo_wb_rd_addr_rd_s : std_logic;
-    --signal fifo_wb_rd_addr_rd_d : std_logic;
     signal fifo_wb_rd_addr_dout_s : std_logic_vector(g_BYTE_ADDR_WIDTH-1 downto 0);
     signal fifo_wb_rd_addr_full_s : std_logic;
     signal fifo_wb_rd_addr_almost_full_s : std_logic;
     signal fifo_wb_rd_addr_empty_s : std_logic;
     
-    --signal fifo_wb_rd_mask_din_a : mask_array;
+    signal fifo_wb_rd_mask_s : std_logic_vector(g_BYTE_ADDR_WIDTH + c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_din_s : std_logic_vector(g_BYTE_ADDR_WIDTH + c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_wr_s : std_logic;
     signal fifo_wb_rd_mask_rd_s : std_logic;
-    --signal fifo_wb_rd_addr_rd_d : std_logic;
     signal fifo_wb_rd_mask_dout_s : std_logic_vector(c_register_shift_size-1 downto 0);
     signal fifo_wb_rd_mask_full_s : std_logic;
     signal fifo_wb_rd_mask_almost_full_s : std_logic;
@@ -184,8 +183,7 @@ architecture behavioral of ddr3_ctrl_wb is
     
     signal ddr_cmd_s : std_logic; -- '1' = read, '0' = write
     signal ddr_rd_data_end_s : std_logic;
-    
-    --signal wb_rd_read_addr_rec_nb_s : unsigned(1 downto 0); -- received addresses number
+   
 
     signal wb_stall_s   : std_logic;
     signal wb_stall_d : std_logic;
@@ -196,23 +194,15 @@ architecture behavioral of ddr3_ctrl_wb is
     --------------------------------------
     -- debug
     --------------------------------------    
-    constant qword_swap_ds : std_logic_vector(2 downto 0) := "111";
-    constant c_BYTE_SWAP : boolean := true;
+
     
     
     --------------------------------------
     -- Counter
     --------------------------------------
-    signal wb_write_cnt : integer range 0 to c_register_shift_size;
-    --signal wb_write_cnt_d : integer range 0 to c_register_shift_size;
-    signal wb_write_wait_cnt : unsigned(9 downto 0);
-    
-    --signal wb_read_cnt : integer range 0 to 3;
+    signal wb_write_wait_cnt : unsigned(9 downto 0);    
     signal wb_read_wait_cnt : unsigned(9 downto 0);
-    --signal wb_read_data_cnt : integer range 0 to 3;
-    signal wb_read_data_cnt_d : integer range 0 to 3;
-    
-    --signal wb_read_test : integer;
+
     
     
     
@@ -228,7 +218,6 @@ begin
     --------------------------------------
     
     ddr_wb_rd_mask_dout_do <= fifo_wb_rd_mask_dout_s;
-    --ddr_wb_rd_mask_addr_dout_do <= fifo_wb_rd_mask_addr_dout_s;
     ddr_rd_fifo_full_do  <=  fifo_wb_rd_data_full_s & fifo_wb_rd_mask_full_s;
     ddr_rd_fifo_empty_do <=  fifo_wb_rd_data_empty_s & fifo_wb_rd_mask_empty_s;
     ddr_rd_fifo_rd_do    <= fifo_wb_rd_data_rd_s & fifo_wb_rd_mask_rd_s;
@@ -257,8 +246,8 @@ begin
     p_wb_write : process (wb_clk_i, rst_n_i)
     begin
         if (rst_n_i = '0') then
-            wb_write_cnt <= 0;
             wb_write_wait_cnt <= c_write_wait_time;
+            wb_wr_shift_flush_1_s <= '0';
             wb_wr_valid_shift_s <= (others => '0');
             
             for i in 0 to c_register_shift_size-1 loop
@@ -269,7 +258,7 @@ begin
 
             wb_wr_ack_s <= '0';
         elsif rising_edge(wb_clk_i) then
-
+            wb_wr_shift_flush_1_s <= wb_wr_shift_flush_s;
 
             if (wb_cyc_i = '1' and wb_stb_i = '1' and wb_we_i = '1') then
                 wb_wr_ack_s <= '1';
@@ -288,6 +277,7 @@ begin
             end if;
             
             -- Erase the data sent to the FIFO
+            --if(wb_wr_shift_flush_1_s = '1') then
             if(wb_wr_shift_flush_s = '1') then
                 wb_write_wait_cnt <= c_write_wait_time;
             end if;
@@ -317,11 +307,11 @@ begin
     p_wb_write_rtl : process (wb_write_wait_cnt,wb_wr_addr_shift_a,wb_wr_valid_shift_s,wb_wr_shift_flush_s,wb_wr_first_row_s,wb_wr_row_a,wb_wr_match_s,wb_wr_global_row_s)
     begin
 
-        fifo_wb_wr_addr_din_s <= (others => '0');
+        fifo_wb_wr_addr_s <= (others => '0');
         wb_wr_first_row_s <= (others => '0');
         for i in (c_register_shift_size-1) downto 0 loop
             if wb_wr_global_row_s(i) = '1' then
-                    fifo_wb_wr_addr_din_s <= wb_wr_addr_shift_a(i)(g_BYTE_ADDR_WIDTH-1 downto 3) & "000"  ;
+                    fifo_wb_wr_addr_s <= wb_wr_addr_shift_a(i)(g_BYTE_ADDR_WIDTH-1 downto 3) & "000"  ;
                     wb_wr_first_row_s <= wb_wr_row_a(i);
             end if;
               
@@ -338,8 +328,7 @@ begin
         
     end process p_wb_write_rtl;
     
-    wb_wr_shift_flush_s <= '1' when wb_wr_flush_v_s /= (wb_wr_flush_v_s'range => '0') else
-                           '0';
+
     
     p_wb_write_shift: process (wb_wr_shifting_s,wb_wr_addr_shift_a,wb_wr_data_shift_a,wb_wr_mask_shift_a,wb_wr_valid_shift_s,wb_addr_i,wb_data_i,wb_sel_i,wb_wr_flush_v_s)
     
@@ -383,7 +372,8 @@ begin
     wb_wr_global_row_s <= wb_wr_match_s and wb_wr_valid_shift_s;
     wb_wr_flush_v_s <= wb_wr_first_row_s;
     
-    fifo_wb_wr_wr_s <= wb_wr_shift_flush_s;
+    wb_wr_shift_flush_s <= '1' when wb_wr_flush_v_s /= (wb_wr_flush_v_s'range => '0') else
+                           '0'; 
 
     
     wr_mask_match_g:for i in 0 to c_register_shift_size-1 generate
@@ -393,7 +383,7 @@ begin
             wb_wr_row_a(i)(j) <= '1' when wb_wr_addr_shift_a(i)(g_BYTE_ADDR_WIDTH-1 downto 3) = wb_wr_addr_shift_a(j)(g_BYTE_ADDR_WIDTH-1 downto 3) and wb_wr_match_s(i) = '1' and wb_wr_match_s(j) = '1' and wb_wr_valid_shift_s(i) = '1' and wb_wr_valid_shift_s(j) = '1' else
                                  '0';
         end generate;
-        fifo_wb_wr_mask_din_s((i)*8+7 downto (i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_flush_v_s(i) = '1' else (others=>'0');
+        fifo_wb_wr_mask_s((i)*8+7 downto (i)*8)   <= wb_wr_mask_shift_a(i) when wb_wr_flush_v_s(i) = '1' else (others=>'0');
     end generate;
     
     
@@ -407,14 +397,30 @@ begin
                           wb_wr_data_shift_a(1) & 
                           wb_wr_data_shift_a(0);
  
+    fifo_wr_data_in : process (wb_clk_i, rst_n_i)
+    begin
+        if (rst_n_i = '0') then
+            fifo_wb_wr_din_s <= (others => '0');
+            fifo_wb_wr_wr_s <= '0';
+        elsif rising_edge(wb_clk_i) then
+        
+            fifo_wb_wr_din_s <= fifo_wb_wr_addr_s & 
+                                fifo_wb_wr_mask_s &
+                                wb_wr_data_shift_s;        
+            fifo_wb_wr_wr_s <= wb_wr_shift_flush_s;
+        end if;
+        
+     end process;
 
     
-    
 
-    fifo_wb_wr_din_s <= fifo_wb_wr_addr_din_s & 
-                        fifo_wb_wr_mask_din_s &
-                        wb_wr_data_shift_s;
-   
+    --fifo_wb_wr_din_s <= fifo_wb_wr_addr_s & 
+    --                    fifo_wb_wr_mask_s &
+    --                    wb_wr_data_shift_s;
+                        
+    --fifo_wb_wr_wr_s <= wb_wr_shift_flush_s;
+
+  
     
     fifo_wb_write : fifo_315x16
     PORT MAP (
@@ -443,6 +449,7 @@ begin
         
     begin
     if (rst_n_i = '0') then
+        wb_rd_shift_flush_1_s <= wb_rd_shift_flush_s;
         wb_read_wait_cnt <= c_read_wait_time;
         
         wb_rd_valid_shift_s <= (others => '0');
@@ -452,6 +459,7 @@ begin
         end loop;
         
     elsif rising_edge(wb_clk_i) then
+        wb_rd_shift_flush_1_s <= wb_rd_shift_flush_s;
         -- Register Shift
         if (wb_cyc_i = '1' and wb_stb_i = '1' and wb_we_i = '0') then
             wb_read_wait_cnt <= c_read_wait_time;
@@ -467,6 +475,7 @@ begin
         
         
         -- Erase the data sent to the FIFO
+        --if(wb_rd_shift_flush_1_s = '1') then
         if(wb_rd_shift_flush_s = '1') then
             wb_read_wait_cnt <= c_read_wait_time;
         end if;
@@ -483,11 +492,11 @@ begin
     p_wb_read_rtl : process (wb_read_wait_cnt,wb_rd_addr_shift_a,wb_rd_addr_ref_a,wb_rd_valid_shift_s,wb_rd_shift_flush_s,wb_rd_global_row_s,wb_rd_addr_shift_a,wb_rd_row_a,wb_rd_first_row_s)
     begin
         
-        fifo_wb_rd_addr_din_s <= (others => '0');
+        fifo_wb_rd_addr_s <= (others => 'X');
         wb_rd_first_row_s <= (others => '0');
         for i in (c_register_shift_size-1) downto 0 loop
             if wb_rd_global_row_s(i) = '1' then
-                    fifo_wb_rd_addr_din_s <= wb_rd_addr_shift_a(i)(g_BYTE_ADDR_WIDTH-1 downto 3) & "000"  ;
+                    fifo_wb_rd_addr_s <= wb_rd_addr_shift_a(i)(g_BYTE_ADDR_WIDTH-1 downto 3) & "000"  ;
                     wb_rd_first_row_s <= wb_rd_row_a(i);
             end if;
               
@@ -511,8 +520,7 @@ begin
     wb_rd_global_row_s <= wb_rd_match_s and wb_rd_valid_shift_s;
     wb_rd_flush_v_s <= wb_rd_first_row_s;
     
-    fifo_wb_rd_addr_wr_s <= wb_rd_shift_flush_s;
-    fifo_wb_rd_mask_wr_s <= wb_rd_shift_flush_s;
+
 
     
     rd_match_g:for i in 0 to c_register_shift_size-1 generate
@@ -577,10 +585,29 @@ begin
         end if;
     end process p_wb_read_data;
     
+    
+    fifo_rd_data_in : process (wb_clk_i, rst_n_i)
+    begin
+        if (rst_n_i = '0') then
+            fifo_wb_rd_addr_din_s <= (others => '0');
+            fifo_wb_rd_mask_din_s <= (others => '0');
+            fifo_wb_rd_addr_wr_s <= '0';
+            fifo_wb_rd_mask_wr_s <= '0';
+        elsif rising_edge(wb_clk_i) then
+            
+            fifo_wb_rd_addr_wr_s <= wb_rd_shift_flush_s;
+            fifo_wb_rd_mask_wr_s <= wb_rd_shift_flush_s;         
+            fifo_wb_rd_addr_din_s <= fifo_wb_rd_addr_s;
+            fifo_wb_rd_mask_din_s <= fifo_wb_rd_addr_s & wb_rd_valid_shift_s;
+        end if;
+        
+     end process;
  
+    --fifo_wb_rd_addr_wr_s <= wb_rd_shift_flush_s;
+    --fifo_wb_rd_mask_wr_s <= wb_rd_shift_flush_s;   
     
     
-    fifo_wb_rd_mask_din_s <= fifo_wb_rd_addr_din_s & wb_rd_valid_shift_s; -- TODO: DEBUG
+    --fifo_wb_rd_mask_din_s <= fifo_wb_rd_addr_s & wb_rd_valid_shift_s;
     
     
     fifo_wb_rd_data_rd_s <= '1' when wb_rd_ack_shift_s(c_register_shift_size-1 downto 1) = "0000000" and fifo_wb_rd_mask_empty_s = '0' and fifo_wb_rd_data_empty_s = '0' else
@@ -697,9 +724,8 @@ begin
     
     
     fifo_wb_wr_rd_s <= ddr_wdf_rdy_i and ddr_rdy_i and not fifo_wb_wr_empty_s;
-    --fifo_wb_wr_addr_rd_s <= ddr_wdf_rdy_i and ddr_rdy_i and not fifo_wb_wr_addr_empty_s;
     fifo_wb_rd_addr_rd_s <= ddr_rdy_i and (not fifo_wb_rd_addr_empty_s) and (not fifo_wb_rd_data_almost_full_s); -- and (not fifo_wb_rd_mask_full_s);
-    fifo_wb_rd_data_wr_s <= ddr_rd_data_valid_i and ddr_rd_data_end_i; -- TODO : check ddr_clk
+    fifo_wb_rd_data_wr_s <= ddr_rd_data_valid_i and ddr_rd_data_end_i;
     
     fifo_wb_rd_data_din_s <= ddr_rd_data_i;
     
