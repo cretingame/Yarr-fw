@@ -108,7 +108,7 @@ else:
 
 if (ltx_file != None):
 	ltx_file = ltx_files[nb]
-	cmds = cmds_debug.format('{',ltx_file,'}') + cmds_post_gui
+	cmds = cmds_debug.format('{',ltx_file,'}') #+ cmds_post_gui
 	script_file.write(cmds)
 	script_file.flush()
 	subprocess.call(["vivado", "-mode", "batch","-source", script_path])
