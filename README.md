@@ -1,7 +1,9 @@
 # Yarr-fw
 This firmware is made for the XpressK7 board. This document will explain step by step how to get the firmware working and launch testing programs.
+
 ##Connect the board
 //Some pictures
+
 ##Install Vivado
 
 ## Download the source code from the git repository
@@ -10,16 +12,19 @@ Firstly, to download the files from the git repository, you need to install git.
 If this command works the terminal will ask you whether you want to install this package.
 `Is this ok [y/d/N]: `
 Type yes to confirm you want to install git. 
+
 ##Download the source files 
 You can download all the source files project.
 `$ git clone git@github.com:Yarr/Yarr-fw.git`
 Check whether the files were downloaded, by listing the folder. You should see a folder named "Yarr-fw".
+
 ##Generate the bitfile
 Move in the folder where you will generate the bitfile.
 `$ cd Yarr-fw/syn/xpressk7/ddr3_revA/`
 To launch the synthesis you just need to launch make.
 `$ make`
 Prepare a coffee, it will last around 15 minutes to synthesize all the project. 
+
 ##Write the bitfile into the flash memory
 Move in the folder where the script file are.
 `$ cd Yarr-fw/script/`
